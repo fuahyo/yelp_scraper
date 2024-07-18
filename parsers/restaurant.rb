@@ -35,7 +35,7 @@ else
     search_script = html.css("script").find{|s| s.text =~ /ItemList/}
     json = JSON.parse(search_script)['itemListElement'][0]['contentLocation'] rescue nil
 
-    if json.nil?  
+    # if json.nil?  
       json3 = {}
       jsonHtmlSearch = html.search('script[type="application/json"]')
       jsonHtmlSearch.each do |script|
@@ -63,11 +63,17 @@ else
       json = json.merge("telephone" =>json3[target_key_telephone]['formatted'])
       json = json.merge("rating" =>json3[target_key_rating]['rating'])
       json = json.merge("reviewCount" =>json3[target_key_rating]['reviewCount'])
-      json = json.merge("priceRange" =>json3[target_key_rating]['priceRange'])
+      priceRangefromJson = json3[target_key_rating]['priceRange']
+      if priceRangefromJson.is_a?(Hash)
+        target_key_priceRange = json3.keys.find { |key| key.match(/\$ROOT_QUERY\.business\({\"encid\":\".*\"}\)\.priceRange/) }
+        json = json.merge("priceRange" =>json3[target_key_priceRange]['display'])
+      else
+        json = json.merge("priceRange" =>json3[target_key_rating]['priceRange'])
+      end
       json = json.merge("servesCuisine" =>json3[target_key_alias]['title'])
 
       newName = true
-    end 
+    # end 
   end
 
   addressCountry = json['address']['addressCountry'] rescue nil
@@ -88,8 +94,8 @@ else
   if parsable
     if !json.nil?
       name = json['name']
-      name = json['bizDetailsPageProps']['businessName'] if newName
-
+      name = json['bizDetailsPageProps']['businessName'] if newName && name.nil?
+      
       street_1 = json['address']['streetAddress'].gsub(/\s+/, ' ') rescue nil
       street_1 = json['location']['addressLine1'] if street_1.nil?
       
